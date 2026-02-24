@@ -131,7 +131,42 @@ SUCCESS - PIPELINE COMPLETED
 ```bash
 python scripts/index_simple.py
 ```
+## Airflow - Orchestration
 
+### Lancer Airflow en local
+```bash
+# Demarrer les services Docker (Elasticsearch, Kibana, Airflow)
+docker-compose up -d
+
+# Acceder a l'interface Airflow
+# URL: http://localhost:8080
+# Username: airflow
+# Password: airflow
+```
+
+### DAG Pipeline
+
+Le DAG `covid_analytics_pipeline` orchestre les etapes suivantes :
+```
+start
+  |
+  +---> ingest_france ---> format_france ---+
+  |                                         |
+  +---> ingest_colombia ---> format_colombia ---+---> combine_data ---> index_elasticsearch ---> end
+```
+
+### Execution manuelle du pipeline
+```bash
+# Sans Airflow (recommande pour les tests)
+PYTHONPATH=. python scripts/run_pipeline.py
+```
+
+### Fichiers Airflow
+```
+airflow/
+|-- dags/
+    |-- covid_pipeline.py    # DAG principal
+```
 ### Acceder au Dashboard Kibana
 ```
 http://localhost:5601
@@ -232,3 +267,5 @@ tealamenta. - AI/ML Engineer
 ## Licence
 
 MIT
+
+
