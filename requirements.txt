@@ -26,3 +26,5 @@ loguru==0.7.2
 # Utils
 tqdm==4.66.1
 click==8.1.7
+gunicorn==21.2.0
+flask==3.0.0
