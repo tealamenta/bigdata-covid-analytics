@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 setup(
     name="bigdata-covid-analytics",
     version="1.0.0",
-    author="Mohamed Horache",
+    author="tealamenta",
     description="Big Data COVID-19 Analytics Pipeline",
     packages=find_packages(),
     python_requires=">=3.11",

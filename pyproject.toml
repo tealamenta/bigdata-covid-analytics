@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 name = "bigdata_covid"
 version = "0.1.0"
 description = "Big Data COVID analytics"
-authors = [{name="Mohamed"}]
+authors = [{name="tealamenta"}]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,7 +1,7 @@
 .PHONY: help up down logs clean test fix-permissions init
 
 help:
-	@echo "🚀 BIG DATA COVID ANALYTICS"
+	@echo "BIG DATA COVID ANALYTICS"
 	@echo ""
 	@echo "Commands:"
 	@echo "  make init            - Initialize project (permissions + setup)"
@@ -13,9 +13,9 @@ help:
 	@echo "  make test            - Run tests"
 
 up:
-	@echo "🚀 Starting services..."
+	@echo " Starting services..."
 	@export AIRFLOW_UID=$$(id -u) && docker-compose up -d
-	@echo "✅ Services started!"
+	@echo " Services started!"
 	@echo "Airflow: http://localhost:8080 (admin/admin)"
 	@echo "Kibana: http://localhost:5601"
 	@echo "Spark: http://localhost:8081"
@@ -29,16 +29,16 @@ logs:
 clean:
 	@find . -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -name "*.pyc" -delete 2>/dev/null || true
-	@echo "✅ Cleaned!"
+	@echo " Cleaned!"
 
 test:
 	@echo "Running tests..."
 	@pytest tests/ -v
 
 fix-permissions:
-	@echo "🔒 Fixing permissions..."
+	@echo " Fixing permissions..."
 	@bash scripts/setup/fix_permissions.sh
 
 init: fix-permissions
-	@echo "🚀 Initializing project..."
-	@echo "✅ Project ready!"
+	@echo " Initializing project..."
+	@echo " Project ready!"

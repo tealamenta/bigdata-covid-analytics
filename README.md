@@ -224,7 +224,7 @@ bigdata-covid-analytics/
 
 ## Auteur
 
-Mohamed H - DATA705 Big Data - Fevrier 2026
+tealamenta - DATA705 Big Data - Fevrier 2026
 
 ## Licence
 

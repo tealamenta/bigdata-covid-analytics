@@ -8,7 +8,7 @@ app = Flask(__name__)
 def home():
     return jsonify({
         "project": "COVID-19 Analytics - France vs Colombia",
-        "author": "M H",
+        "author": "tealamenta",
         "endpoints": ["/stats", "/france", "/colombia"]
     })
 
