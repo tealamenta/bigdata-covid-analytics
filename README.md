@@ -228,4 +228,4 @@ tealamenta - DATA705 Big Data - Fevrier 2026
 
 ## Licence
 
-Ce projet est realise dans le cadre du module DATA705 Big Data.
+MIT
