@@ -1,62 +1,70 @@
-"""COVID-19 Data Indexing - Simple Version."""
+"""Simple Elasticsearch indexing script."""
 
 import pandas as pd
-from pathlib import Path
 from elasticsearch import Elasticsearch
-
+import os
+import math
 
 def main():
-    print(" Starting Elasticsearch indexing...")
+    print("Starting Elasticsearch indexing...")
     
-    es = Elasticsearch(["http://localhost:9200"])
-    print(f" Connected to Elasticsearch")
+    # Connect to Elasticsearch
+    es = Elasticsearch(
+        ["http://localhost:9200"],
+        basic_auth=("elastic", "changeme")
+    )
     
-    index_name = "covid-analytics"
-    if es.indices.exists(index=index_name):
-        es.indices.delete(index=index_name)
-        print(f"Deleted existing index")
+    if not es.ping():
+        print("Cannot connect to Elasticsearch")
+        return
     
-    mapping = {
-        "mappings": {
-            "properties": {
-                "date": {"type": "date", "format": "yyyy-MM-dd"},
-                "country": {"type": "keyword"},
-                "total_hospitalizations": {"type": "float"},
-                "total_icu": {"type": "float"},
-                "total_deaths": {"type": "float"},
-                "total_recovered": {"type": "float"},
-                "regions_count": {"type": "integer"},
-            }
-        }
-    }
-    es.indices.create(index=index_name, body=mapping)
-    print(f" Created index: {index_name}")
+    print("Connected to Elasticsearch")
     
-    df = pd.read_csv("data/usage/covid_comparison/daily_comparison.csv")
-    print(f" Read {len(df)} rows")
+    # Delete existing index
+    if es.indices.exists(index="covid-analytics"):
+        es.indices.delete(index="covid-analytics")
+        print("Deleted existing index")
     
-    success = 0
-    for i, row in df.iterrows():
-        try:
-            if pd.isna(row["date"]):
-                continue
-            doc = {"date": row["date"], "country": row["country"]}
-            for f in ["total_hospitalizations", "total_icu", "total_deaths", "total_recovered", "regions_count"]:
-                if f in row and pd.notna(row[f]):
-                    doc[f] = float(row[f])
-            es.index(index=index_name, document=doc)
-            success += 1
-            if success % 200 == 0:
-                print(f"   {success} indexed...")
-        except Exception as e:
-            if success < 3:
-                print(f"Error: {e}")
+    # Create index
+    es.indices.create(index="covid-analytics")
+    print("Created index: covid-analytics")
     
-    es.indices.refresh(index=index_name)
-    count = es.count(index=index_name)["count"]
-    print(f"\n Done! {count} documents indexed")
-    print(f" Open Kibana, set time: 2020-01-01 to 2024-01-01")
-
+    # Read CSV from Spark output (it's a folder)
+    csv_path = "data/usage/covid_comparison/daily_comparison.csv"
+    
+    # Find the actual CSV file inside the folder
+    if os.path.isdir(csv_path):
+        for f in os.listdir(csv_path):
+            if f.endswith(".csv") and not f.startswith("."):
+                csv_file = os.path.join(csv_path, f)
+                break
+    else:
+        csv_file = csv_path
+    
+    print(f"Reading: {csv_file}")
+    df = pd.read_csv(csv_file)
+    
+    # Replace NaN with None
+    df = df.fillna(0)
+    
+    print(f"Loaded {len(df)} records")
+    
+    # Index documents
+    indexed = 0
+    for _, row in df.iterrows():
+        doc = row.to_dict()
+        # Clean NaN values
+        clean_doc = {}
+        for k, v in doc.items():
+            if pd.isna(v) or (isinstance(v, float) and math.isnan(v)):
+                clean_doc[k] = 0
+            else:
+                clean_doc[k] = v
+        es.index(index="covid-analytics", document=clean_doc)
+        indexed += 1
+    
+    print(f"Indexed {indexed} documents")
+    print("SUCCESS - Indexing completed!")
 
 if __name__ == "__main__":
     main()
