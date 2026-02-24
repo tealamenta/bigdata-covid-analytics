@@ -14,7 +14,7 @@ def main():
     index_name = "covid-analytics"
     if es.indices.exists(index=index_name):
         es.indices.delete(index=index_name)
-        print(f"🗑️  Deleted existing index")
+        print(f"Deleted existing index")
     
     mapping = {
         "mappings": {

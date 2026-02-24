@@ -7,7 +7,7 @@ set -e
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-echo "🔒 Configuration des permissions du projet..."
+echo " Configuration des permissions du projet..."
 echo " Répertoire: $PROJECT_ROOT"
 echo ""
 
@@ -19,11 +19,11 @@ echo " Configuration des dossiers (755)..."
 find . -type d -exec chmod 755 {} \;
 
 # 2. Fichiers normaux : 644 (rw-r--r--)
-echo "📄 Configuration des fichiers (644)..."
+echo " Configuration des fichiers (644)..."
 find . -type f -exec chmod 644 {} \;
 
 # 3. Scripts Python : 755 (exécutables)
-echo "🐍 Scripts Python exécutables..."
+echo " Scripts Python exécutables..."
 find src/ -name "*.py" -exec chmod 755 {} \;
 find tests/ -name "*.py" -exec chmod 755 {} \;
 
@@ -32,7 +32,7 @@ echo " Scripts shell exécutables..."
 find scripts/ -name "*.sh" -exec chmod 755 {} \; 2>/dev/null || true
 
 # 5. Protéger les fichiers sensibles (si existants)
-echo "🔐 Protection fichiers sensibles..."
+echo " Protection fichiers sensibles..."
 [ -f .env ] && chmod 600 .env
 [ -f config/secrets.env ] && chmod 600 config/secrets.env
 
@@ -44,7 +44,7 @@ chmod -R 755 results/ 2>/dev/null || true
 chmod -R 755 metrics/ 2>/dev/null || true
 
 # 7. Vérifier Docker (si lancé en root)
-echo "🐳 Vérification permissions Docker..."
+echo " Vérification permissions Docker..."
 if [ -d "airflow/logs" ]; then
     chmod -R 777 airflow/logs/ 2>/dev/null || true
 fi
