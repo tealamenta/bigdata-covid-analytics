@@ -1,0 +1,12 @@
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bigdata_covid"
+version = "0.1.0"
+description = "Big Data COVID analytics"
+authors = [{name="Mohamed"}]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+

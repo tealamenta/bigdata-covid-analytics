@@ -1,0 +1,131 @@
+# ============================================================================
+# SPARK CONFIGURATION
+# ============================================================================
+
+spark:
+  app_name: "COVID-19-Analytics"
+  master: "spark://spark-master:7077"
+  
+  # Executor configuration
+  executor:
+    memory: "2g"
+    cores: 2
+    instances: 1
+  
+  # Driver configuration
+  driver:
+    memory: "1g"
+    cores: 1
+  
+  # Spark settings
+  settings:
+    spark.sql.shuffle.partitions: 10
+    spark.sql.adaptive.enabled: true
+    spark.sql.adaptive.coalescePartitions.enabled: true
+    spark.default.parallelism: 4
+    spark.sql.parquet.compression.codec: "snappy"
+    spark.sql.sources.partitionOverwriteMode: "dynamic"
+
+# ============================================================================
+# SCHEMAS DEFINITION
+# ============================================================================
+schemas:
+  france_hospitalizations:
+    columns:
+      - name: "dep"
+        type: "string"
+        nullable: false
+        description: "Code département"
+      - name: "sexe"
+        type: "string"
+        nullable: false
+        description: "Sexe (0=tous, 1=hommes, 2=femmes)"
+      - name: "jour"
+        type: "date"
+        nullable: false
+        description: "Date"
+      - name: "hosp"
+        type: "integer"
+        nullable: true
+        description: "Nombre de personnes hospitalisées"
+      - name: "rea"
+        type: "integer"
+        nullable: true
+        description: "Nombre de personnes en réanimation"
+      - name: "rad"
+        type: "integer"
+        nullable: true
+        description: "Nombre de retours à domicile"
+      - name: "dc"
+        type: "integer"
+        nullable: true
+        description: "Nombre de décès"
+  
+  colombia_cases:
+    columns:
+      - name: "fecha_reporte_web"
+        type: "date"
+        nullable: false
+        description: "Date du rapport"
+      - name: "ciudad_municipio_nom"
+        type: "string"
+        nullable: true
+        description: "Ville/Municipalité"
+      - name: "departamento_nom"
+        type: "string"
+        nullable: true
+        description: "Département"
+      - name: "edad"
+        type: "integer"
+        nullable: true
+        description: "Âge"
+      - name: "sexo"
+        type: "string"
+        nullable: true
+        description: "Sexe"
+      - name: "estado"
+        type: "string"
+        nullable: true
+        description: "État (Activo, Recuperado, Fallecido)"
+      - name: "fecha_muerte"
+        type: "date"
+        nullable: true
+        description: "Date de décès"
+
+# ============================================================================
+# TRANSFORMATION RULES
+# ============================================================================
+transformations:
+  date_format:
+    input_formats:
+      - "yyyy-MM-dd"
+      - "dd/MM/yyyy"
+      - "yyyy/MM/dd"
+    output_format: "yyyy-MM-dd"
+    timezone: "UTC"
+  
+  null_handling:
+    strategy: "drop"  # Options: drop, fill, keep
+    fill_values:
+      integer: 0
+      string: "UNKNOWN"
+  
+  data_quality:
+    remove_duplicates: true
+    validate_ranges:
+      enabled: true
+      age_min: 0
+      age_max: 120
+
+# ============================================================================
+# OUTPUT SETTINGS
+# ============================================================================
+output:
+  parquet:
+    compression: "snappy"
+    partition_by:
+      - "year"
+      - "month"
+    coalesce_partitions: 10
+  
+  write_mode: "overwrite"  # Options: overwrite, append

@@ -1,0 +1,28 @@
+# ============================================================================
+# BIG DATA COVID ANALYTICS - DEPENDENCIES (Python 3.13 Compatible)
+# ============================================================================
+
+# Core Data Processing
+pyspark==3.5.3
+pandas>=2.2.0
+numpy>=1.26.0
+pyarrow>=14.0.1
+
+# APIs & Web
+requests==2.31.0
+urllib3==2.1.0
+
+# Elasticsearch
+elasticsearch==8.11.0
+
+# Configuration Management
+pyyaml==6.0.1
+python-dotenv==1.0.0
+pydantic>=2.5.0
+
+# Logging
+loguru==0.7.2
+
+# Utils
+tqdm==4.66.1
+click==8.1.7

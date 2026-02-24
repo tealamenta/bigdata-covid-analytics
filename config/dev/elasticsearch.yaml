@@ -1,0 +1,110 @@
+# ============================================================================
+# ELASTICSEARCH CONFIGURATION
+# ============================================================================
+
+elasticsearch:
+  hosts:
+    - "http://elasticsearch:9200"
+  
+  timeout: 30
+  max_retries: 3
+  retry_on_timeout: true
+  
+  # Authentication (si nécessaire en production)
+  # username: "elastic"
+  # password: "changeme"
+
+# ============================================================================
+# INDEX CONFIGURATION
+# ============================================================================
+indices:
+  covid_comparison:
+    name: "covid-analytics"
+    
+    settings:
+      number_of_shards: 1
+      number_of_replicas: 0
+      refresh_interval: "5s"
+    
+    mappings:
+      properties:
+        date:
+          type: "date"
+          format: "yyyy-MM-dd"
+        
+        country:
+          type: "keyword"
+        
+        region:
+          type: "keyword"
+        
+        hospitalizations:
+          type: "integer"
+        
+        icu_patients:
+          type: "integer"
+        
+        deaths:
+          type: "integer"
+        
+        recovered:
+          type: "integer"
+        
+        total_cases:
+          type: "integer"
+        
+        # KPIs calculés
+        hospitalization_rate:
+          type: "float"
+        
+        mortality_rate:
+          type: "float"
+        
+        icu_rate:
+          type: "float"
+        
+        # Métadonnées
+        ingestion_timestamp:
+          type: "date"
+        
+        data_source:
+          type: "keyword"
+
+# ============================================================================
+# BULK INDEXING SETTINGS
+# ============================================================================
+bulk:
+  chunk_size: 500
+  max_chunk_bytes: 10485760  # 10MB
+  thread_count: 1
+  queue_size: 4
+
+# ============================================================================
+# KIBANA DASHBOARDS
+# ============================================================================
+kibana:
+  host: "http://kibana:5601"
+  
+  index_patterns:
+    - name: "covid-analytics-*"
+      time_field: "date"
+  
+  visualizations:
+    - type: "line"
+      title: "COVID Cases Over Time"
+      metrics:
+        - "total_cases"
+        - "deaths"
+      split_by: "country"
+    
+    - type: "metric"
+      title: "Current Statistics"
+      metrics:
+        - "hospitalizations"
+        - "icu_patients"
+        - "deaths"
+    
+    - type: "map"
+      title: "Geographic Distribution"
+      field: "region"
+      metric: "total_cases"

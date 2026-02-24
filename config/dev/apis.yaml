@@ -1,0 +1,70 @@
+# ============================================================================
+# API CONFIGURATION - COVID DATA SOURCES
+# ============================================================================
+
+data_sources:
+  france:
+    name: "France COVID-19 Data"
+    provider: "data.gouv.fr"
+    base_url: "https://www.data.gouv.fr/fr/datasets/r"
+    
+    # Hospitalisations quotidiennes
+    hospitalizations:
+      resource_id: "63352e38-d353-4b54-bfd1-f1b3ee1cabd7"
+      format: "csv"
+      description: "Données hospitalières COVID-19 France"
+      refresh_rate: "daily"
+      encoding: "utf-8"
+    
+    # Données supplémentaires (optionnel)
+    cases:
+      resource_id: "406c6a23-e283-4300-9484-54e78c8ae675"
+      format: "csv"
+      description: "Données de cas confirmés"
+      refresh_rate: "daily"
+  
+  colombia:
+    name: "Colombia COVID-19 Data"
+    provider: "datos.gov.co"
+    base_url: "https://www.datos.gov.co/resource"
+    
+    cases:
+      resource_id: "gt2j-8ykr"
+      format: "csv"
+      description: "Casos positivos COVID-19 Colombia"
+      refresh_rate: "daily"
+      limit: 100000  # Nombre max de lignes à récupérer
+      encoding: "utf-8"
+
+# ============================================================================
+# REQUEST SETTINGS
+# ============================================================================
+request_settings:
+  timeout: 60  # seconds
+  max_retries: 3
+  retry_delay: 5  # seconds
+  user_agent: "BigDataCovidAnalytics/1.0"
+  
+# ============================================================================
+# DATA LAKE PATHS
+# ============================================================================
+data_lake:
+  raw:
+    base_path: "data/raw"
+    partition_format: "%Y-%m-%d"  # YYYY-MM-DD
+  
+  formatted:
+    base_path: "data/formatted"
+    format: "parquet"
+    compression: "snappy"
+  
+  usage:
+    base_path: "data/usage"
+
+# ============================================================================
+# LOGGING
+# ============================================================================
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "logs/ingestion"
