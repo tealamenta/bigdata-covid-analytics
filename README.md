@@ -224,7 +224,10 @@ bigdata-covid-analytics/
 
 ## Auteur
 
-tealamenta - DATA705 Big Data - Fevrier 2026
+tealamenta. - AI/ML Engineer
+
+    GitHub: @tealamenta
+
 
 ## Licence
 
