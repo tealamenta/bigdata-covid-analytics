@@ -83,7 +83,6 @@ data/
 |       |-- summary_stats.parquet/
 |-- ml_results/                       [Machine Learning]
     |-- model_metrics.txt
-    |-- future_predictions.csv
 ```
 
 ## Installation
@@ -107,6 +106,14 @@ docker-compose up -d
 
 # Lancer LocalStack (S3)
 docker run -d --name localstack -p 4566:4566 localstack/localstack
+
+# Configurer AWS CLI pour LocalStack
+aws configure set aws_access_key_id test
+aws configure set aws_secret_access_key test
+aws configure set region us-east-1
+
+# Creer le bucket S3
+aws --endpoint-url=http://localhost:4566 s3 mb s3://covid-datalake
 ```
 
 ## Utilisation
@@ -127,10 +134,52 @@ PYTHONPATH=. python scripts/run_pipeline.py
 SUCCESS - PIPELINE COMPLETED
 ```
 
-### Indexer dans Elasticsearch
+## Elasticsearch
+
+### Creer l'index avec le mapping
+```bash
+curl -X PUT "http://localhost:9200/covid-analytics" -H "Content-Type: application/json" -d '{
+  "mappings": {
+    "properties": {
+      "date": { "type": "date" },
+      "country": { "type": "keyword" },
+      "total_cases": { "type": "float" },
+      "total_hospitalizations": { "type": "float" },
+      "total_icu": { "type": "float" },
+      "total_deaths": { "type": "float" },
+      "total_recovered": { "type": "float" },
+      "active_cases": { "type": "float" },
+      "regions_count": { "type": "integer" },
+      "avg_age": { "type": "float" },
+      "mortality_rate": { "type": "float" },
+      "recovery_rate": { "type": "float" }
+    }
+  }
+}'
+```
+
+### Indexer les donnees
 ```bash
 python scripts/index_simple.py
 ```
+
+### Verifier l'indexation
+```bash
+curl http://localhost:9200/covid-analytics/_count
+```
+
+## S3 - Stockage Distribue
+
+### Synchroniser les donnees vers S3
+```bash
+aws --endpoint-url=http://localhost:4566 s3 sync data/ s3://covid-datalake/data/
+```
+
+### Verifier le contenu S3
+```bash
+aws --endpoint-url=http://localhost:4566 s3 ls s3://covid-datalake/data/
+```
+
 ## Airflow - Orchestration
 
 ### Lancer Airflow en local
@@ -161,25 +210,23 @@ start
 PYTHONPATH=. python scripts/run_pipeline.py
 ```
 
-### Fichiers Airflow
-```
-airflow/
-|-- dags/
-    |-- covid_pipeline.py    # DAG principal
-```
-### Acceder au Dashboard Kibana
+## Kibana - Dashboard
+
+### Acceder a Kibana
 ```
 http://localhost:5601
 ```
 
-### Synchroniser avec S3
-```bash
-aws --endpoint-url=http://localhost:4566 s3 sync data/ s3://covid-datalake/data/
-```
+### Creer le Data View
 
-## Dashboard Kibana
+1. Aller dans Management > Data Views
+2. Create data view
+3. Name: covid-analytics
+4. Index pattern: covid-analytics*
+5. Timestamp field: date
+6. Save
 
-Le dashboard comprend 10 visualisations :
+### Visualisations du Dashboard
 
 | Visualisation | Type | Description |
 |---------------|------|-------------|
@@ -189,10 +236,7 @@ Le dashboard comprend 10 visualisations :
 | Guerisons cumulees | Heat Map | Evolution des guerisons |
 | Repartition par pays | Pie Chart | 86.54% France / 13.46% Colombie |
 | Pic hospitalisations | Metric | Max: 33,466 / Median: 17,531 |
-| Total documents | Metric | 1,270 enregistrements |
-| Statistiques deces | Table | Par pays |
-| Statistiques hospitalisations | Table | Par pays |
-| Statistiques guerisons | Table | Par pays |
+| Total documents | Metric | 1,280 enregistrements |
 
 ## Machine Learning
 
@@ -208,22 +252,26 @@ Le dashboard comprend 10 visualisations :
 |----------|--------|----------------|
 | RMSE | 7,545 | Erreur moyenne |
 | R-squared | -0.004 | Donnees non-lineaires |
-| Prediction J+30 | ~18,000 | Hospitalisations stables |
 
-Note: Le R-squared negatif est attendu car les donnees COVID suivent des vagues non-lineaires.
+### Voir les resultats
+```bash
+cat data/ml_results/model_metrics.txt
+```
 
 ## API REST
 
-Une API Flask est disponible pour acceder aux statistiques :
-```bash
-python app.py
-```
+Une API Flask est deployee sur Render :
 
-Endpoints :
-- GET / : Informations du projet
-- GET /stats : Statistiques globales
-- GET /france : Donnees France
-- GET /colombia : Donnees Colombie
+- URL: https://covid-analytics-api.onrender.com
+
+### Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| GET / | Informations du projet |
+| GET /stats | Statistiques globales |
+| GET /france | Donnees France |
+| GET /colombia | Donnees Colombie |
 
 ## Resultats Cles
 
@@ -233,7 +281,6 @@ Endpoints :
 | Jours de donnees | 1,109 | 171 |
 | Pic hospitalisations | 33,466 | N/A |
 | Pic reanimation | 7,019 | N/A |
-| Mediane deces | 89,751 | 8 |
 
 ## Structure du Projet
 ```
@@ -250,22 +297,29 @@ bigdata-covid-analytics/
 |-- airflow/
 |   |-- dags/               # DAG Airflow
 |-- data/                   # Data Lake
-|-- docker/                 # Dockerfiles
 |-- tests/                  # Tests unitaires
 |-- app.py                  # API Flask
 |-- docker-compose.yml
 |-- requirements.txt
 ```
 
+## Tests
+
+### Lancer les tests
+```bash
+python -m unittest discover tests/ -v
+```
+
+## Liens
+
+- GitHub: https://github.com/tealamenta/bigdata-covid-analytics
+- API: https://covid-analytics-api.onrender.com
+- Medium: https://medium.com/@suntzu_80548/building-a-covid-19-data-lake-france-vs-colombia-analysis-b365263bb724
+
 ## Auteur
 
-tealamenta. - AI/ML Engineer
-
-    GitHub: @tealamenta
-
+tealamenta - AI/ML Engineer
 
 ## Licence
 
 MIT
-
-

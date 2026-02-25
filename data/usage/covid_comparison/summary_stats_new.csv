@@ -1,0 +1,3 @@
+country,first_date,last_date,total_days,cumulative_cases,cumulative_deaths,cumulative_recovered,peak_hospitalizations,peak_icu,avg_mortality_rate,avg_recovery_rate
+COLOMBIA,2020-05-14,2022-01-25,171,100000.0,2808,0,,,2.2359649122807017,0.0
+FRANCE,2020-03-18,2023-03-31,1109,,90758138,478543256,33466.0,7019.0,,
