@@ -1,18 +1,18 @@
 # COVID-19 Analytics: France vs Colombia
 
-Analyse comparative Big Data de la pandemie COVID-19 entre la France et la Colombie.
+Architecture Data Lake complete pour analyser et comparer les donnees COVID-19 entre la France et la Colombie.
 
 ## Architecture
 ```
 Sources API REST --> Ingestion --> Raw Layer (CSV)
                          |
-                    Formatting (Spark)
+                    Formatting (Pandas/Parquet)
                          |
                   Formatted Layer (Parquet)
                          |
-                   Combination (Spark)
+                   Combination (Pandas)
                          |
-                    Usage Layer
+                    Usage Layer (CSV)
                          |
               Indexation (Elasticsearch)
                          |
@@ -24,7 +24,7 @@ Sources API REST --> Ingestion --> Raw Layer (CSV)
 | Composant | Technologie | Version |
 |-----------|-------------|---------|
 | Langage | Python | 3.9+ |
-| Processing | Apache Spark | 3.2.1 |
+| Processing | Pandas / PySpark | 2.0+ / 3.2.1 |
 | Orchestration | Apache Airflow | 2.7.3 |
 | Indexation | Elasticsearch | 8.11.0 |
 | Visualisation | Kibana | 8.11.0 |
@@ -38,7 +38,7 @@ Sources API REST --> Ingestion --> Raw Layer (CSV)
 
 - Python 3.9+
 - Docker et Docker Compose
-- Apache Spark 3.2.1
+- Apache Spark 3.2.1 (pour ML local)
 
 ### Cloner le repo
 ```bash
@@ -77,43 +77,71 @@ docker-compose down
 
 ## Lancer le Pipeline
 
-### Option 1 : Via Script Python
-```bash
-PYTHONPATH=. python scripts/run_pipeline.py
-```
-
-Resultat attendu :
-```
-[OK] ingestion_france
-[OK] ingestion_colombia
-[OK] formatting_france
-[OK] formatting_colombia
-[OK] combination
-
-SUCCESS - PIPELINE COMPLETED
-```
-
-### Option 2 : Via Airflow
+### Option 1 : Via Airflow (RECOMMANDE - Production)
 
 1. Demarrer Docker :
 ```bash
 docker-compose up -d
 ```
 
-2. Ouvrir Airflow UI :
+2. Attendre 1-2 minutes puis ouvrir Airflow UI :
 ```
 http://localhost:8081
 Username: admin
 Password: admin
 ```
 
-3. Activer le DAG `covid_analytics_pipeline`
+3. Activer le DAG `covid_analytics_pipeline` (toggle ON)
 
 4. Cliquer sur Play pour lancer le DAG
 
+5. Toutes les taches passent au VERT :
+   - start
+   - ingest_france, ingest_colombia (en parallele)
+   - format_france, format_colombia (en parallele)
+   - combine_data
+   - index_elasticsearch
+   - end
+
+### Option 2 : Via Script Python (pour tests locaux)
+```bash
+PYTHONPATH=. python scripts/run_pipeline.py
+```
+
+## Airflow - Orchestration
+
+### Acceder a Airflow
+```
+http://localhost:8081
+Username: admin
+Password: admin
+```
+
+### DAG : covid_analytics_pipeline
+
+- **Schedule** : `0 6 * * *` (quotidien a 6h00)
+- **Tasks** : 8 (2 EmptyOperators + 6 PythonOperators)
+- **Owner** : tealamenta
+
+### Flux du DAG
+```
+start
+  |
+  +--> ingest_france --> format_france --+
+  |                                      |
+  +--> ingest_colombia --> format_colombia --> combine_data --> index_elasticsearch --> end
+```
+
+### Fonctionnalites du DAG
+
+- **Ingestion** : Telecharge les donnees depuis les API REST (France + Colombie)
+- **Formatting** : Transforme les CSV en Parquet avec Pandas
+- **Combination** : Agregation et jointure des donnees
+- **Indexation** : Indexe automatiquement dans Elasticsearch
+
 ## Elasticsearch
 
-### Creer l'index avec le mapping
+### Creer l'index manuellement (si besoin)
 ```bash
 curl -X PUT "http://localhost:9200/covid-analytics" -H "Content-Type: application/json" -d '{
   "mappings": {
@@ -125,19 +153,11 @@ curl -X PUT "http://localhost:9200/covid-analytics" -H "Content-Type: applicatio
       "total_icu": { "type": "float" },
       "total_deaths": { "type": "float" },
       "total_recovered": { "type": "float" },
-      "active_cases": { "type": "float" },
       "regions_count": { "type": "integer" },
-      "avg_age": { "type": "float" },
-      "mortality_rate": { "type": "float" },
-      "recovery_rate": { "type": "float" }
+      "avg_age": { "type": "float" }
     }
   }
 }'
-```
-
-### Indexer les donnees
-```bash
-python scripts/index_simple.py
 ```
 
 ### Verifier l'indexation
@@ -160,24 +180,15 @@ http://localhost:5601
 4. Timestamp field: `date`
 5. Save
 
-## Airflow - Orchestration
+### Visualisations disponibles
 
-### Acceder a Airflow
-```
-http://localhost:8081
-Username: admin
-Password: admin
-```
-
-### DAG : covid_analytics_pipeline
-
-- Schedule : `0 6 * * *` (quotidien a 6h00)
-- Tasks : 8 (2 EmptyOperators + 6 PythonOperators)
-
-Flux du DAG :
-```
-start --> [ingest_france, ingest_colombia] --> [format_france, format_colombia] --> combine_data --> index_elasticsearch --> end
-```
+| Visualisation | Type | Champ |
+|---------------|------|-------|
+| Hospitalisations par mois | Bar/Heat Map | total_hospitalizations |
+| Deces par mois | Bar/Heat Map | total_deaths |
+| Repartition par pays | Pie | country |
+| Total documents | Metric | count |
+| Pic hospitalisations | Metric | max(total_hospitalizations) |
 
 ## S3 - Stockage Distribue
 
@@ -186,26 +197,28 @@ start --> [ingest_france, ingest_colombia] --> [format_france, format_colombia] 
 docker run -d --name localstack -p 4566:4566 localstack/localstack
 ```
 
-### Creer le bucket
+### Creer le bucket et synchroniser
 ```bash
 aws --endpoint-url=http://localhost:4566 s3 mb s3://covid-datalake
-```
-
-### Synchroniser les donnees
-```bash
 aws --endpoint-url=http://localhost:4566 s3 sync data/ s3://covid-datalake/data/
 ```
 
+### Verifier
+```bash
+aws --endpoint-url=http://localhost:4566 s3 ls s3://covid-datalake/data/
+```
+
 ## Machine Learning
+```bash
+PYTHONPATH=. python src/ml/train_model.py
+cat data/ml_results/model_metrics.txt
+```
 
 | Metrique | Valeur |
 |----------|--------|
 | Algorithme | Linear Regression (Spark MLlib) |
 | RMSE | 7,545 |
 | R-squared | -0.004 |
-```bash
-cat data/ml_results/model_metrics.txt
-```
 
 ## API REST
 
@@ -228,6 +241,33 @@ https://covid-analytics-api.onrender.com
 python -m unittest discover tests/ -v
 ```
 
+Resultat : 18 tests OK
+
+## Structure du Projet
+```
+bigdata-covid-analytics/
+├── airflow/
+│   └── dags/
+│       └── covid_pipeline.py      # DAG Airflow complet
+├── data/
+│   ├── raw/                       # Donnees brutes CSV
+│   ├── formatted/                 # Donnees Parquet
+│   ├── usage/                     # Donnees combinees
+│   └── ml_results/                # Resultats ML
+├── src/
+│   ├── ingestion/                 # Scripts d'ingestion
+│   ├── formatting/                # Scripts de formatting
+│   ├── combination/               # Scripts de combination
+│   └── ml/                        # Machine Learning
+├── scripts/
+│   ├── run_pipeline.py            # Pipeline local
+│   └── index_simple.py            # Indexation ES
+├── tests/                         # Tests unitaires
+├── docker-compose.yml             # Services Docker
+├── requirements.txt               # Dependances Python
+└── README.md
+```
+
 ## Resultats
 
 | Metrique | France | Colombie |
@@ -239,13 +279,13 @@ python -m unittest discover tests/ -v
 
 ## Liens
 
-- GitHub : https://github.com/tealamenta/bigdata-covid-analytics
-- API : https://covid-analytics-api.onrender.com
-- Medium : https://medium.com/@suntzu_80548/building-a-covid-19-data-lake-france-vs-colombia-analysis-b365263bb724
+- **GitHub** : https://github.com/tealamenta/bigdata-covid-analytics
+- **API** : https://covid-analytics-api.onrender.com
+- **Medium** : https://medium.com/@suntzu_80548/building-a-covid-19-data-lake-france-vs-colombia-analysis-b365263bb724
 
 ## Auteur
 
-tealamenta
+tealamenta - AI/ML Engineer
 
 ## Licence
 
