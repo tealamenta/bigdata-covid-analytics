@@ -281,7 +281,7 @@ bigdata-covid-analytics/
 
 - **GitHub** : https://github.com/tealamenta/bigdata-covid-analytics
 - **API** : https://covid-analytics-api.onrender.com
-- **Medium** : https://medium.com/@suntzu_80548/building-a-covid-19-data-lake-france-vs-colombia-analysis-b365263bb724
+- **Medium** : https://medium.com/@tealamenta/building-a-covid-19-data-lake-france-vs-colombia-analysis-b365263bb724
 
 ## Auteur
 
